@@ -8,15 +8,17 @@ library(lubridate)
 
 ## Read in data
 
-cases <- read_csv("/Users/boazbaliejukia/Documents/PMF_Project/Measles_data_cleaning/MMEDGit/cases.csv") %>% clean_names()
-coverage_who <- read_csv("/Users/boazbaliejukia/Documents/PMF_Project/Measles_data_cleaning/MMEDGit/Measles vaccination coverage DRC.csv") %>% clean_names()
+data_dir <- if (dir.exists("Data")) "Data" else normalizePath("../Data")
+
+cases <- read_csv(file.path(data_dir, "cases.csv"), show_col_types = FALSE) %>% clean_names()
+coverage_who <- read_csv(file.path(data_dir, "Measles vaccination coverage DRC.csv"), show_col_types = FALSE) %>% clean_names()
 
 ## Data exploration
 
 cases %>% head()
 cases %>% glimpse()
 coverage_who %>% head()
-
+#cases %>% view()
 ## Visualisation
 
 #cases_18_19 <- cases %>% filter(year %in% c(2018, 2019)) 
@@ -26,16 +28,43 @@ cases <- cases %>% mutate(year_month <- ym(paste(year, month, sep = "-"))) %>% r
 ) #
 
 cases %>% glimpse()
+cases_19 <- cases %>% filter(
+    year %in% c(2019, 2020) #& month > 7
+)
 
-cases %>% filter(year %in% c(2019, 2020)) %>% 
+ 
+
+
+cases_19$month[cases_19$month == 1 & cases_19$year ==2020 ] <- 13
+cases_19$month[cases_19$month == 2 & cases_19$year ==2020 ] <- 14
+cases_19$month[cases_19$month == 3 & cases_19$year ==2020 ] <- 15
+cases_19$month[cases_19$month == 4 & cases_19$year ==2020 ] <- 16
+cases_19$month[cases_19$month == 5 & cases_19$year ==2020 ] <- 17
+cases_19$month[cases_19$month == 6 & cases_19$year ==2020 ] <- 18
+cases_19$month[cases_19$month == 7 & cases_19$year ==2020 ] <- 19
+cases_19$month[cases_19$month == 8 & cases_19$year ==2020 ] <- 20
+cases_19$month[cases_19$month == 9 & cases_19$year ==2020 ] <- 21
+cases_19$month[cases_19$month == 10 & cases_19$year ==2020 ] <- 22
+cases_19$month[cases_19$month == 11 & cases_19$year ==2020 ] <- 23
+cases_19$month[cases_19$month == 12 & cases_19$year ==2020 ] <- 24
+
+cases_19 %>% view()
+cases_19_8 <- cases_19 %>% filter(
+    month > 5
+)
+cases_19_8$month_2 <- 1:nrow(cases_19_8)
+
+cases_19_8 %>% glimpse()
+
+cases_plot <- cases %>% filter(year %in% c(2019, 2020)) %>% 
     ggplot(aes(year_month, measles_suspect)) +
-    geom_line(linewidth = 1, colour = BLUE) +
+    geom_line(linewidth = 1, colour = "blue") +
     scale_x_date(
         date_breaks = "2 months", 
         date_labels = "%b %Y"   # e.g. Jan 2019, Mar 2019
     ) +
     labs(
-        title = "Democratic Republic of Congo (DRC)",
+        #title = "Democratic Republic of Congo (DRC)",
         subtitle = "Suspected measles cases during the 2019-2020 outbreak",
         x = "Time",
         y = "Suspected cases"
@@ -57,6 +86,8 @@ cases %>% filter(year %in% c(2019, 2020)) %>%
         plot.margin = margin(0.05, 0.02, 0.05, 0.03, "npc")
     )
 
+cases_plot
+
 coverage_who$year <- as.character(coverage_who$year)
 coverage_who %>% 
     filter(antigen == "MCV1" & 
@@ -65,7 +96,7 @@ coverage_who %>%
     ggplot(aes(year, coverage)) +
     geom_col(stat = "identity") +
     theme_bw() +
-    labs(title = "Democratic Republic of Congo (DRC)",
+    labs(#title = "Democratic Republic of Congo (DRC)",
          subtitle = "Routine Immunisation Coverage",
          x = "Year", y = "Coverage") +
     theme(
