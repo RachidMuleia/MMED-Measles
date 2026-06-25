@@ -18,7 +18,7 @@ library(lubridate)
 
 # 1. Load data ---------------------------------------------------------------
 
-path_data <- "/Users/rachidmuleia/Dropbox/INS/SACEMA/PMF/MMED-Measles/Data/cases.xlsx"
+path_data <- "/Users/boazbaliejukia/Documents/GitHub/MMED-Measles/Data/cases.xlsx"
 
 measles_df <- read_excel(path_data, sheet = "WEB") |>
   clean_names() |>
@@ -63,7 +63,7 @@ sir_model2 <- function(t, y, parms) {
 
 N0 <- 84e6                          # DRC population
 p_immune <- 0.60                    # 60% already immune at t = 0
-Initial_R <- 0   # in R (prior infection)
+Initial_R <- 0            # in R (prior infection)
 Initial_V <- round(N0 * p_immune)                     # no one vaccinated yet at t = 0
 
 # I at t = 0: scale first month cases by infectious period (14 days)
@@ -87,7 +87,7 @@ theta <- -log(1 - vaccination_coverage * vaccination_efficacy) / 12  # campaign 
 
 # Starting guess for beta (from first-month incidence)
 #beta_start <- fit_data$incidence[1] * N0 / (S0 * Initial_I)
-beta_start <- 3
+beta_start <- 8
 values <- c(
   beta = beta_start,
   gamma = gamma,
@@ -110,6 +110,14 @@ sirv <- data.frame(lsoda(
 
 sirv
 
+## Plot the model output
+ggplot(sirv, aes(x = time)) +
+  geom_line(aes(y = S), color = "steelblue") +
+  geom_line(aes(y = I), color = "firebrick") +
+  geom_line(aes(y = R), color = "green") +
+  geom_line(aes(y = V), color = "purple") +
+  labs(x = "Time", y = "Population") +
+  theme_minimal()
 
 # 5. Likelihood function -----------------------------------------------------
 # Compare observed monthly cases to model-predicted new cases (Poisson)
