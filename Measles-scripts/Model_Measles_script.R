@@ -59,12 +59,6 @@ sir_model2 <- function(t, y, parms) {
 }
 
 
-<<<<<<< HEAD
-N0 <- 92900000
-Initial_I <- 1000
-Initial_R <- 0
-Initial_V <- 0.4*N0  #0.2*N0
-=======
 # 3. Population and parameters -----------------------------------------------
 
 N0 <- 84e6                          # DRC population
@@ -75,43 +69,8 @@ Initial_V <- round(N0 * p_immune)                     # no one vaccinated yet at
 # I at t = 0: scale first month cases by infectious period (14 days)
 Initial_I <- max(fit_data$incidence[1] * (14 / 30), 1)
 
->>>>>>> 797f471 (this is our final model)
 S0 <- N0 - Initial_I - Initial_R - Initial_V
-coverage <- 0.6
-efficacy <- 0.85  
-inf_d <- 14/30    # infectious period (in months)
-trans_coef <- 6  #527*N0/(S0 * Initial_I)  # Transmission coefficient
 
-    
-
-<<<<<<< HEAD
-S0
-N0
-Initial_I
-Initial_R
-Initial_V
-trans_coef
-
-pop.SI <- c(S = S0,  # Initially 2% of the population is susceptible
-            I = Initial_I,      # Suspected cases in Dec 2018
-            V = Initial_V,   # 60% of the pop are vaccinated
-            R = Initial_R,
-            c = 0 )       
-
-
-## The final input our function needs is a vector of parameter values, which we
-## can create in the same way:
-
-values <- c(beta = trans_coef,                     
-            gamma = 1/inf_d, 
-            theta = - (log(1- coverage * efficacy))/12,
-            N = N0                                    # population size (constant)
-            )
-
-time.out <- seq(0, 24, by = 0.01)
-
-#sir_example <- sir_model2(t = 0, y = pop.SI, parms = values)
-=======
 pop.SI <- c(
   S = S0,
   I = Initial_I,
@@ -141,7 +100,6 @@ time.out <- seq(0, length(obsDat), by = 1)
 
 
 # 4. Run model once with starting values (before fitting) --------------------
->>>>>>> 797f471 (this is our final model)
 
 sirv <- data.frame(lsoda(
   y = pop.SI,
@@ -151,33 +109,6 @@ sirv <- data.frame(lsoda(
 ))
 
 sirv
-sirv_monthly <- data.frame(lsoda(
-    y = pop.SI,               # Initial conditions for population
-    times = seq(0, 19, by = 1),             # Timepoints for evaluation
-    func = sir_model2,                   # Function to evaluate
-    parms = values                # Vector of parameters
-))
-sirv_monthly %>% glimpse()
-
-sirv_monthly_fit <- cases_19_8 %>% mutate(
-    estimated_incidence = pmax(diff(sirv_monthly$c), 0) 
-)
-
-sirv_monthly_fit_plot <- sirv %>% mutate(
-    date = min(sirv_monthly_fit$year_month) %m+%days(round(time*30)), 
-    estimated_incidence = pmax(trans_coef*S*I/(S+I+R+V), 0)
-)
-sirv_monthly_fit %>% glimpse()
-ggplot(sirv_monthly_fit, aes(x = year_month)) +
-    geom_col(aes(y = measles_suspect)) +
-    geom_line(data = sirv_monthly_fit_plot, aes(x = date, y = estimated_incidence))
-
-trans_coef
-
-
-
-
-
 
 
 # 5. Likelihood function -----------------------------------------------------
@@ -274,7 +205,7 @@ plot_curve <- sirv_fit |>
     estimated_incidence = pmax(fit_beta * S * I / (S + I + R + V), 0)
   )
 
-ggplot(fit_data, aes(x = date)) +
+plot_fit_DRC<-ggplot(fit_data, aes(x = date)) +
   geom_col(aes(y = incidence), fill = "steelblue", alpha = 0.6, width = 20) +
 geom_line(
     data = plot_curve,
@@ -283,13 +214,20 @@ geom_line(
     linewidth = 1
   ) +
   labs(
-    title = "SIRV fit to DRC measles — wave 2",
-    subtitle = paste0("beta = ", round(fit_beta, 2),
-                      ", R0 = ", round(fit_beta / gamma, 1)),
+
     x = "Date",
     y = "Monthly cases"
   ) + 
   theme_minimal()
+
+  ggsave(
+  filename = "Model_fit_DRC.png",   # .png / .pdf / .svg / .tiff ...
+  plot     = plot_fit_DRC,
+  path     = "/Users/rachidmuleia/Dropbox/INS/SACEMA/PMF/MMED-Measles",
+  width    = 20, height = 12, units = "cm",
+  dpi      = 300,
+  bg       = "white"
+)
 
 
 # 8. Vaccination scenarios ---------------------------------------------------

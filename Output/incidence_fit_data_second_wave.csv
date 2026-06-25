@@ -1,0 +1,16 @@
+date,year,month,incidence,region,country,iso3,measles_suspect,measles_clinical,measles_epi_linked,measles_lab_confirmed,measles_total,observed_incidence,estimated_incidence
+2019-10-01,2019,10,2351,AFR,Democratic Republic of the Congo,COD,2351,8,2008,192,2208,2351,3313.4706464674127
+2019-11-01,2019,11,2779,AFR,Democratic Republic of the Congo,COD,2779,5,2545,108,2658,2779,4113.244844802083
+2019-12-01,2019,12,1830,AFR,Democratic Republic of the Congo,COD,1830,3,1583,137,1723,1830,4446.361654226251
+2020-01-01,2020,1,6833,AFR,Democratic Republic of the Congo,COD,6833,4,6515,171,6690,6833,4218.252156759776
+2020-02-01,2020,2,5170,AFR,Democratic Republic of the Congo,COD,5170,13,4424,352,4789,5170,3538.234025673395
+2020-03-01,2020,3,2323,AFR,Democratic Republic of the Congo,COD,2323,10,1299,414,1723,2323,2642.521821139864
+2020-04-01,2020,4,878,AFR,Democratic Republic of the Congo,COD,878,5,403,150,558,878,1768.9390786903787
+2020-05-01,2020,5,487,AFR,Democratic Republic of the Congo,COD,487,8,114,109,231,487,1068.0575765008325
+2020-06-01,2020,6,257,AFR,Democratic Republic of the Congo,COD,257,10,3,85,98,257,585.0965102593982
+2020-07-01,2020,7,253,AFR,Democratic Republic of the Congo,COD,253,6,1,101,108,253,292.4310028695363
+2020-08-01,2020,8,170,AFR,Democratic Republic of the Congo,COD,170,3,0,44,47,170,134.04612492078377
+2020-09-01,2020,9,177,AFR,Democratic Republic of the Congo,COD,177,10,0,42,52,177,56.63192084824914
+2020-10-01,2020,10,169,AFR,Democratic Republic of the Congo,COD,169,4,0,44,48,169,22.154630277029355
+2020-11-01,2020,11,185,AFR,Democratic Republic of the Congo,COD,185,6,2,73,81,185,8.060621680750046
+2020-12-01,2020,12,281,AFR,Democratic Republic of the Congo,COD,281,12,20,120,152,281,2.738860644185479
