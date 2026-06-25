@@ -274,7 +274,7 @@ plot_curve <- sirv_fit |>
     estimated_incidence = pmax(fit_beta * S * I / (S + I + R + V), 0)
   )
 
-ggplot(fit_data, aes(x = date)) +
+plot_fit_DRC<-ggplot(fit_data, aes(x = date)) +
   geom_col(aes(y = incidence), fill = "steelblue", alpha = 0.6, width = 20) +
 geom_line(
     data = plot_curve,
@@ -283,13 +283,20 @@ geom_line(
     linewidth = 1
   ) +
   labs(
-    title = "SIRV fit to DRC measles — wave 2",
-    subtitle = paste0("beta = ", round(fit_beta, 2),
-                      ", R0 = ", round(fit_beta / gamma, 1)),
+
     x = "Date",
     y = "Monthly cases"
   ) + 
   theme_minimal()
+
+  ggsave(
+  filename = "Model_fit_DRC.png",   # .png / .pdf / .svg / .tiff ...
+  plot     = plot_fit_DRC,
+  path     = "/Users/rachidmuleia/Dropbox/INS/SACEMA/PMF/MMED-Measles",
+  width    = 20, height = 12, units = "cm",
+  dpi      = 300,
+  bg       = "white"
+)
 
 
 # 8. Vaccination scenarios ---------------------------------------------------
