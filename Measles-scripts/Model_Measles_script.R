@@ -205,7 +205,7 @@ plot_curve <- sirv_fit |>
     estimated_incidence = pmax(fit_beta * S * I / (S + I + R + V), 0)
   )
 
-plot_fit_DRC<-ggplot(fit_data, aes(x = date)) +
+plot_fit_DRC <- ggplot(fit_data, aes(x = date)) +
   geom_col(aes(y = incidence), fill = "steelblue", alpha = 0.6, width = 20) +
 geom_line(
     data = plot_curve,
@@ -240,13 +240,11 @@ geom_line(
 
 scenarios <- tribble(
   ~scenario,              ~coverage, ~efficacy, ~months,
-  "No vaccination",       0,         0,         NA,
+  
   "Baseline (60%, 12 mo)", 0.60,     0.85,      12,
-  "Fast (60%, 6 mo)",     0.60,      0.85,      6,
-  "Slow (60%, 18 mo)",    0.60,      0.85,      18,
-  "Higher (80%, 12 mo)",  0.80,      0.85,      12,
-  "Lower (40%, 12 mo)",   0.40,      0.85,      12,
-  "Middle (50%,12 mo)",   0.5,       0.85,      12
+  "Scenario 1 (70%, 12 mo)",    0.7,      0.85,   12,
+  "Scenario 2 (80%, 12 mo)",  0.80,      0.85,      12,
+  "Scenario 3 (90%, 12 mo)",   0.9,      0.85,      12
 )
 
 scenario_theta <- function(coverage, efficacy, months) {
@@ -280,7 +278,7 @@ for (i in seq_len(nrow(scenarios))) {
     control = list(maxit = 500)
   )
 
-  parms_i <- c(beta = unname(fit_i$par), gamma = gamma, theta = theta_i)
+  parms_i <- c(beta = fit_beta, gamma = gamma, theta = theta_i)
   sirv_i <- data.frame(lsoda(
     y = pop.SI,
     times = time.out,
@@ -311,62 +309,162 @@ cat("\n--- Vaccination scenarios (lower NLL = better fit) ---\n")
 print(scenario_summary, n = Inf)
 
 # Bar chart: which scenario fits best?
-ggplot(scenario_summary, aes(x = reorder(scenario, -NLL), y = NLL, fill = best)) +
+plot_scenario_nll <- ggplot(scenario_summary, aes(x = reorder(scenario, -NLL), y = NLL, fill = best)) +
   geom_col(show.legend = FALSE) +
   coord_flip() +
   scale_fill_manual(values = c("FALSE" = "grey70", "TRUE" = "firebrick")) +
   labs(
-    title = "Model fit by vaccination scenario",
-    subtitle = "Negative log-likelihood (Poisson); lower is better",
     x = NULL,
     y = "NLL"
   ) +
   theme_minimal()
 
-# Fitted curves for each scenario (monthly)
+ggsave(
+  filename = "Model_scenario_NLL.png",   # .png / .pdf / .svg / .tiff ...
+  plot     = plot_scenario_nll,
+  path     = "/Users/rachidmuleia/Dropbox/INS/SACEMA/PMF/MMED-Measles",
+  width    = 20, height = 12, units = "cm",
+  dpi      = 300,
+  bg       = "white"
+)
+# # Fitted curves for each scenario (monthly)
 scenario_curves <- vector("list", nrow(scenarios))
 
 for (i in seq_len(nrow(scenarios))) {
   s <- scenarios[i, ]
   row <- scenario_summary |> filter(scenario == s$scenario)
-  parms_i <- c(beta = row$beta, gamma = gamma, theta = row$theta)
+  parms_i <- c(beta = fit_beta, gamma = gamma, theta = row$theta)
+
+  # Fine grid (step 0.1) so the fitted curve is smooth, exactly like plot_fit_DRC
   sirv_i <- data.frame(lsoda(
     y = pop.SI,
-    times = time.out,
+    times = time.plot,
     func = sir_model2,
     parms = parms_i
   ))
 
-  scenario_curves[[i]] <- fit_data |>
-    select(date, incidence) |>
+  scenario_curves[[i]] <- sirv_i |>
     mutate(
       scenario = s$scenario,
-      estimated_incidence = pmax(diff(sirv_i$c), 0)
+      date = min(fit_data$date) %m+% days(round(time * 30)),
+      estimated_incidence = pmax(row$beta * S * I / (S + I + R + V), 0)
     )
 }
 
 scenario_plot_data <- bind_rows(scenario_curves)
+# instead of faceting put all in one single plot 
 
-ggplot(scenario_plot_data, aes(x = date)) +
+plot_vaccination_scenarios <- ggplot(scenario_plot_data, aes(x = date)) +
   geom_col(
     data = fit_data,
     aes(y = incidence),
-    fill = "grey85",
+    fill = "steelblue", alpha = 0.6,
     width = 20
   ) +
-  geom_line(aes(y = estimated_incidence, color = scenario), linewidth = 0.9) +
-  facet_wrap(~scenario, ncol = 2) +
+  geom_line(aes(y = estimated_incidence, color = scenario), linewidth = 1) +
+  #facet_wrap(~scenario, ncol = 2) +
   labs(
-    title = "Observed vs fitted — vaccination scenarios",
-    subtitle = "Grey bars = observed monthly cases",
     x = "Date",
     y = "Monthly cases",
     color = "Scenario"
   ) +
-  theme_minimal() +
-  theme(legend.position = "none")
+  theme_minimal()
 
+ggsave(
+
+  filename = "Model_vaccination_scenarios.png",   # .png / .pdf / .svg / .tiff ...
+  plot     = plot_vaccination_scenarios,
+  path     = "/Users/rachidmuleia/Dropbox/INS/SACEMA/PMF/MMED-Measles",
+  width    = 20, height = 12, units = "cm",
+  dpi      = 300,
+  bg       = "white"
+)
 # Save comparison table
 output_dir <- "/Users/rachidmuleia/Dropbox/INS/SACEMA/PMF/MMED-Measles/Output"
 dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 write_csv(scenario_summary, file.path(output_dir, "Model_R_vaccination_scenarios.csv"))
+
+# now lets estimate BOTH beta and theta (gamma stays fixed at 30/14)
+
+# likelihood: same Poisson likelihood as before
+new_nllikelihood <- function(parms, obsDat) {
+  sirv <- data.frame(lsoda(
+    y = pop.SI,
+    times = time.out,
+    func = sir_model2,
+    parms = parms
+  ))
+  incidence <- diff(sirv$c)
+  obsDat_c <- obsDat[seq_along(incidence)]
+  incidence <- pmax(incidence, 0.01)
+
+  -sum(dpois(obsDat_c, lambda = incidence, log = TRUE))
+}
+
+# objective over (beta, theta) only; gamma is the fixed global value
+new_objective <- function(par) {
+  parms <- c(beta = par[1], gamma = gamma, theta = par[2])
+  new_nllikelihood(parms, obsDat)
+}
+
+# starting values and bounds for beta and theta
+beta_start  <- 3
+theta_start <- 0.059
+
+new_fit <- optim(
+  par     = c(beta_start, theta_start),   # initial values for beta and theta
+  fn      = new_objective,
+  method  = "L-BFGS-B",
+  lower   = c(0.1, 0),                     # beta >= 0.1, theta >= 0
+  upper   = c(80, 1),                      # beta <= 80, theta <= 1
+  hessian = TRUE,
+  control = list(maxit = 500)
+)
+
+new_fit_beta  <- new_fit$par[1]
+new_fit_theta <- new_fit$par[2]
+new_fit_parms <- c(beta = new_fit_beta, gamma = gamma, theta = new_fit_theta)
+
+cat("\n--- Fit results: beta & theta (wave 2) ---\n")
+cat("beta  =", round(new_fit_beta, 4), "\n")
+cat("theta =", round(new_fit_theta, 4), "\n")
+cat("R0    =", round(new_fit_beta / gamma, 2), "\n")
+cat("NLL   =", round(new_fit$value, 1), "\n")
+cat("convergence =", new_fit$convergence, "(0 means OK)\n")
+
+# now lets plot the new fit
+# Smooth fitted curve on the fine grid (instantaneous incidence), like plot_fit_DRC.
+# (Do NOT diff() the fine grid into the 15-row monthly data -> length mismatch.)
+new_plot_curve <- data.frame(lsoda(
+  y = pop.SI,
+  times = time.plot,
+  func = sir_model2,
+  parms = new_fit_parms
+)) |>
+  mutate(
+    date = min(fit_data$date) %m+% days(round(time * 30)),
+    estimated_incidence = pmax(new_fit_beta * S * I / (S + I + R + V), 0)
+  )
+
+# plot the new fit
+plot_new_fit <- ggplot(fit_data, aes(x = date)) +
+  geom_col(aes(y = incidence), fill = "steelblue", alpha = 0.6, width = 20) +
+  geom_line(
+    data = new_plot_curve,
+    aes(x = date, y = estimated_incidence),
+    color = "firebrick", linewidth = 1
+  ) +
+  labs(
+    title = "Observed vs fitted — beta & theta estimated",
+    x = "Date", y = "Monthly cases"
+  ) +
+  theme_minimal()
+
+ggsave(
+  filename = "Model_fit_beta_theta.png",
+  plot     = plot_new_fit,
+  path     = "/Users/rachidmuleia/Dropbox/INS/SACEMA/PMF/MMED-Measles",
+  width    = 20, height = 12, units = "cm",
+  dpi      = 300,
+  bg       = "white"
+)
